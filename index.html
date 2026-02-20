@@ -221,8 +221,8 @@ canvas{
   <button onclick="wrapColor('赤')">赤</button>
   <br><br>
   速度：
-  <input type="range" id="speedRange" min="0.5" max="20" step="0.5" value="15">
-  <span id="speedVal">15</span> px/frame
+  <input type="range" id="speedRange" min="0.5" max="20" step="0.5" value="10">
+  <span id="speedVal">10</span> px/frame
   <br><br>
   <label>
     <input type="checkbox" id="loopCheck" checked>
@@ -336,7 +336,7 @@ const ctx=canvas.getContext("2d");
 
 let message=document.getElementById("msgInput").value;
 let x=canvas.width;
-let speed=15;
+let speed=10;
 let loop=true;
 
 const dotRadius = 1.2;
@@ -449,6 +449,7 @@ animate();
 
 </body>
 </html>
+
 
 
 
