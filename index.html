@@ -149,7 +149,7 @@ canvas{
 
 /* ===== コントロール ===== */
 .controls{
-  margin-top:240px;
+  margin-top:225px;
   text-align:center;
 }
 
@@ -213,6 +213,7 @@ canvas{
     {緑}Ｔｈｉｓ　ｔｒａｉｎ　ⅰｓ　ｂｏｕｎｄ　ｆｏｒ　{/緑}{オレンジ}Ｕｊｉ{/オレンジ}{緑}.{/緑}
   {緑}停車駅は、 {/緑}{オレンジ}東福寺・稲荷・ＪＲ藤森・桃山・六地蔵・木幡・黄檗・宇治　{/オレンジ}{緑}です。{/緑}
   {オレンジ}この電車は、{/オレンジ}{赤}禁煙 {/赤}{オレンジ}です。{/オレンジ}{オレンジ}お煙草は、しばらくの間ご遠慮ください。{/オレンジ}</textarea>
+
   <br>
   色を追加：
   <button onclick="wrapColor('緑')">緑</button>
@@ -220,8 +221,8 @@ canvas{
   <button onclick="wrapColor('赤')">赤</button>
   <br><br>
   速度：
-  <input type="range" id="speedRange" min="0.5" max="5" step="0.5" value="3.0">
-  <span id="speedVal">3.0</span> px/frame
+  <input type="range" id="speedRange" min="0.5" max="5" step="0.5" value="2.5">
+  <span id="speedVal">2.5</span> px/frame
   <br><br>
   <label>
     <input type="checkbox" id="loopCheck" checked>
@@ -285,14 +286,12 @@ function updateCar(){
   }
 }
 
-/* ★★★ renderClock 修正版：秒変化で100ms点灯 ★★★ */
-let lastSecond = -1;
-
+/* ★★★ 時計表示 ★★★ */
 function renderClock(){
   const now=new Date();
+
   const hour=now.getHours();
   const minute=String(now.getMinutes()).padStart(2,"0");
-  const second=now.getSeconds();
 
   const hStr=String(hour);
   const container=document.getElementById("clockSeg");
@@ -311,31 +310,24 @@ function renderClock(){
   const colon=document.createElement("div");
   colon.className="colon";
   colon.innerHTML='<div class="dot top"></div><div class="dot bottom"></div>';
-
-  const dots = colon.querySelectorAll(".dot");
-  if(second !== lastSecond){
-    dots.forEach(dot => dot.style.visibility = "visible");
-    setTimeout(()=>{
-      dots.forEach(dot => dot.style.visibility = "hidden");
-    }, 500); // ← 点灯時間を100msに変更
-    lastSecond = second;
-  } else {
-    dots.forEach(dot => dot.style.visibility = "hidden");
-  }
-
   container.appendChild(colon);
+
   container.appendChild(createDigit(minute[0]));
   container.appendChild(createDigit(minute[1]));
 }
-/* ★★★ ここまで ★★★ */
 
+/* ★★★ 丸ドットLED表示 ★★★ */
 const canvas=document.getElementById("ledCanvas");
 const ctx=canvas.getContext("2d");
 
 let message=document.getElementById("msgInput").value;
 let x=canvas.width;
-let speed=3.0;
+let speed=2.5;
 let loop=true;
+
+const dotRadius = 1.2;
+const dotGap = 4.0;
+const fontSize = 80;
 
 function parseMessage(text){
   const segments=[];
@@ -343,30 +335,18 @@ function parseMessage(text){
   let currentColor="#ff7a00";
   let lastIndex=0;
   let match;
-
   while((match=regex.exec(text))!==null){
     if(match.index>lastIndex){
-      segments.push({
-        text:text.substring(lastIndex,match.index),
-        color:currentColor
-      });
+      segments.push({ text:text.substring(lastIndex,match.index), color:currentColor });
     }
     const tag=match[1];
-    if(tag.startsWith("/")){
-      currentColor="#ff7a00";
-    }else if(colorMap[tag]){
-      currentColor=colorMap[tag];
-    }
+    if(tag.startsWith("/")) currentColor="#ff7a00";
+    else if(colorMap[tag]) currentColor=colorMap[tag];
     lastIndex=regex.lastIndex;
   }
-
   if(lastIndex<text.length){
-    segments.push({
-      text:text.substring(lastIndex),
-      color:currentColor
-    });
+    segments.push({ text:text.substring(lastIndex), color:currentColor });
   }
-
   return segments;
 }
 
@@ -374,17 +354,37 @@ function drawLEDText(text,posX){
   ctx.fillStyle="#000";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  ctx.font="54px 'MS Gothic'";
-  ctx.shadowBlur=18;
-
-  let cursorX=posX;
   const parts=parseMessage(text);
+  let cursorX=posX;
 
   parts.forEach(p=>{
-    ctx.fillStyle=p.color;
-    ctx.shadowColor=p.color;
-    ctx.fillText(p.text,cursorX,72);
-    cursorX+=ctx.measureText(p.text).width;
+    const offCanvas=document.createElement("canvas");
+    const offCtx=offCanvas.getContext("2d");
+    offCtx.font=`${fontSize}px 'MS Gothic'`;
+    const textWidth=offCtx.measureText(p.text).width;
+    offCanvas.width=Math.ceil(textWidth);
+    offCanvas.height=fontSize;
+
+    offCtx.font=`${fontSize}px 'MS Gothic'`;
+    offCtx.fillStyle="#fff";
+    offCtx.fillText(p.text,0,fontSize*0.8);
+
+    const imgData=offCtx.getImageData(0,0,offCanvas.width,offCanvas.height).data;
+
+    for(let i=0;i<offCanvas.width;i+=dotGap){
+      for(let j=0;j<offCanvas.height;j+=dotGap){
+        const idx=(j*offCanvas.width+i)*4;
+        const alpha=imgData[idx+3];
+        if(alpha>128){
+          ctx.beginPath();
+          ctx.fillStyle=p.color;
+          ctx.arc(cursorX+i, canvas.height/2-fontSize/2+j, dotRadius,0,Math.PI*2);
+          ctx.fill();
+        }
+      }
+    }
+
+    cursorX+=textWidth+dotGap*4;
   });
 }
 
@@ -392,16 +392,13 @@ function animate(){
   drawLEDText(message,x);
   x-=speed;
 
-  const textWidth=ctx.measureText(
-    message.replace(/{.*?}/g,"")
-  ).width;
+  const offCtx=document.createElement("canvas").getContext("2d");
+  offCtx.font=`${fontSize}px 'MS Gothic'`;
+  const textWidth=offCtx.measureText(message.replace(/{.*?}/g,"")).width + dotGap*4;
 
   if(x<-textWidth){
-    if(loop){
-      x=canvas.width;
-    }else{
-      return;
-    }
+    if(loop) x=canvas.width;
+    else return;
   }
 
   requestAnimationFrame(animate);
@@ -438,6 +435,3 @@ animate();
 
 </body>
 </html>
-
-
-
