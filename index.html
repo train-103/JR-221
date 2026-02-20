@@ -149,7 +149,7 @@ canvas{
 
 /* ===== コントロール ===== */
 .controls{
-  margin-top:225px;
+  margin-top:240px;
   text-align:center;
 }
 
@@ -207,13 +207,12 @@ canvas{
   <br><br>
   表示内容：
   <br>
-  <textarea id="msgInput">{緑}この電車は、{/緑}{オレンジ}普通、宇 治行き {/オレンジ}{緑}です。{/緑}
-{緑}Ｔｈｉｓ ｔｒａｉｎ  ⅰｓ ｂｏｕｎｄ ｆｏｒ {/緑}{オレンジ}Ｕｊｉ{/オレンジ}{緑}.{/緑}
-{緑}この電車は、{/緑}{オレンジ}普通、宇 治行き {/オレンジ}{緑}です。{/緑}
-{緑}Ｔｈｉｓ ｔｒａｉｎ  ⅰｓ ｂｏｕｎｄ ｆｏｒ {/緑}{オレンジ}Ｕｊｉ{/オレンジ}{緑}.{/緑}
-{緑}停車駅は、{/緑}{オレンジ}東福寺・稲荷・ＪＲ藤森・桃山・六地蔵・木幡・黄檗・宇治 {/オレンジ}{緑}です。{/緑}
+  <textarea id="msgInput">{緑}この電車は、{/緑}{オレンジ}普通、宇 治行き　{/オレンジ}{緑}です。{/緑}
+{緑}Ｔｈｉｓ　ｔｒａｉｎ　ⅰｓ　ｂｏｕｎｄ　ｆｏｒ　{/緑}{オレンジ}Ｕｊｉ{/オレンジ}{緑}.{/緑}
+{緑}この電車は、 {/緑}{オレンジ}普通、宇 治行き　{/オレンジ}{緑}です。{/緑}
+{緑}Ｔｈｉｓ　ｔｒａｉｎ　ⅰｓ　ｂｏｕｎｄ　ｆｏｒ　{/緑}{オレンジ}Ｕｊｉ{/オレンジ}{緑}.{/緑}
+{緑}停車駅は、 {/緑}{オレンジ}東福寺・稲荷・ＪＲ藤森・桃山・六地蔵・木幡・黄檗・宇治　{/オレンジ}{緑}です。{/緑}
 {オレンジ}この電車は、{/オレンジ}{赤}禁煙 {/赤}{オレンジ}です。{/オレンジ}{オレンジ}お煙草は、しばらくの間ご遠慮ください。{/オレンジ}</textarea>
-
   <br>
   色を追加：
   <button onclick="wrapColor('緑')">緑</button>
@@ -221,8 +220,8 @@ canvas{
   <button onclick="wrapColor('赤')">赤</button>
   <br><br>
   速度：
-  <input type="range" id="speedRange" min="0.5" max="15" step="0.5" value="8">
-  <span id="speedVal">8</span> px/frame
+  <input type="range" id="speedRange" min="0.5" max="5" step="0.5" value="3.0">
+  <span id="speedVal">3.0</span> px/frame
   <br><br>
   <label>
     <input type="checkbox" id="loopCheck" checked>
@@ -286,7 +285,6 @@ function updateCar(){
   }
 }
 
-/* ★★★ 時計表示 ★★★ */
 /* ★★★ renderClock 修正版：秒変化で100ms点灯 ★★★ */
 let lastSecond = -1;
 
@@ -336,12 +334,8 @@ const ctx=canvas.getContext("2d");
 
 let message=document.getElementById("msgInput").value;
 let x=canvas.width;
-let speed=8;
+let speed=3.0;
 let loop=true;
-
-const dotRadius = 1.0;
-const dotGap = 4.0;
-const fontSize = 85;
 
 function parseMessage(text){
   const segments=[];
@@ -349,18 +343,30 @@ function parseMessage(text){
   let currentColor="#ff7a00";
   let lastIndex=0;
   let match;
+
   while((match=regex.exec(text))!==null){
     if(match.index>lastIndex){
-      segments.push({ text:text.substring(lastIndex,match.index), color:currentColor });
+      segments.push({
+        text:text.substring(lastIndex,match.index),
+        color:currentColor
+      });
     }
     const tag=match[1];
-    if(tag.startsWith("/")) currentColor="#ff7a00";
-    else if(colorMap[tag]) currentColor=colorMap[tag];
+    if(tag.startsWith("/")){
+      currentColor="#ff7a00";
+    }else if(colorMap[tag]){
+      currentColor=colorMap[tag];
+    }
     lastIndex=regex.lastIndex;
   }
+
   if(lastIndex<text.length){
-    segments.push({ text:text.substring(lastIndex), color:currentColor });
+    segments.push({
+      text:text.substring(lastIndex),
+      color:currentColor
+    });
   }
+
   return segments;
 }
 
@@ -368,37 +374,17 @@ function drawLEDText(text,posX){
   ctx.fillStyle="#000";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  const parts=parseMessage(text);
+  ctx.font="80px 'MS Gothic'";
+  ctx.shadowBlur=3;
+
   let cursorX=posX;
+  const parts=parseMessage(text);
 
   parts.forEach(p=>{
-    const offCanvas=document.createElement("canvas");
-    const offCtx=offCanvas.getContext("2d");
-    offCtx.font=`${fontSize}px 'MS Gothic'`;
-    const textWidth=offCtx.measureText(p.text).width;
-    offCanvas.width=Math.ceil(textWidth);
-    offCanvas.height=fontSize;
-
-    offCtx.font=`${fontSize}px 'MS Gothic'`;
-    offCtx.fillStyle="#fff";
-    offCtx.fillText(p.text,0,fontSize*0.8);
-
-    const imgData=offCtx.getImageData(0,0,offCanvas.width,offCanvas.height).data;
-
-    for(let i=0;i<offCanvas.width;i+=dotGap){
-      for(let j=0;j<offCanvas.height;j+=dotGap){
-        const idx=(j*offCanvas.width+i)*4;
-        const alpha=imgData[idx+3];
-        if(alpha>128){
-          ctx.beginPath();
-          ctx.fillStyle=p.color;
-          ctx.arc(cursorX+i, canvas.height/2-fontSize/2+j, dotRadius,0,Math.PI*2);
-          ctx.fill();
-        }
-      }
-    }
-
-    cursorX+=textWidth+dotGap*4;
+    ctx.fillStyle=p.color;
+    ctx.shadowColor=p.color;
+    ctx.fillText(p.text,cursorX,80);
+    cursorX+=ctx.measureText(p.text).width;
   });
 }
 
@@ -406,13 +392,16 @@ function animate(){
   drawLEDText(message,x);
   x-=speed;
 
-  const offCtx=document.createElement("canvas").getContext("2d");
-  offCtx.font=`${fontSize}px 'MS Gothic'`;
-  const textWidth=offCtx.measureText(message.replace(/{.*?}/g,"")).width + dotGap*4;
+  const textWidth=ctx.measureText(
+    message.replace(/{.*?}/g,"")
+  ).width;
 
   if(x<-textWidth){
-    if(loop) x=canvas.width;
-    else return;
+    if(loop){
+      x=canvas.width;
+    }else{
+      return;
+    }
   }
 
   requestAnimationFrame(animate);
@@ -449,5 +438,3 @@ animate();
 
 </body>
 </html>
-
-
