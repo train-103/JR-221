@@ -208,11 +208,8 @@ canvas{
   表示内容：
   <br>
   <textarea id="msgInput">{緑}この電車は、 {/緑}{オレンジ}普通、宇 治行き　{/オレンジ}{緑}です。{/緑}
-    {緑}Ｔｈｉｓ　ｔｒａｉｎ　ⅰｓ　ｂｏｕｎｄ　ｆｏｒ　{/緑}{オレンジ}Ｕｊｉ{/オレンジ}{緑}.{/緑}
-    {緑}この電車は、 {/緑}{オレンジ}普通、宇 治行き　{/オレンジ}{緑}です。{/緑}
-    {緑}Ｔｈｉｓ　ｔｒａｉｎ　ⅰｓ　ｂｏｕｎｄ　ｆｏｒ　{/緑}{オレンジ}Ｕｊｉ{/オレンジ}{緑}.{/緑}
-  {緑}停車駅は、 {/緑}{オレンジ}東福寺・稲荷・ＪＲ藤森・桃山・六地蔵・木幡・黄檗・宇治　{/オレンジ}{緑}です。{/緑}
-  {オレンジ}この電車は、{/オレンジ}{赤}禁煙 {/赤}{オレンジ}です。{/オレンジ}{オレンジ}お煙草は、しばらくの間ご遠慮ください。{/オレンジ}</textarea>
+{緑}Ｔｈｉｓ　ｔｒａｉｎ　ⅰｓ　ｂｏｕｎｄ　ｆｏｒ　{/緑}{オレンジ}Ｕｊｉ{/オレンジ}{\r\n}
+{緑}停車駅は、 {/緑}{オレンジ}東福寺・稲荷・ＪＲ藤森・桃山・六地蔵・木幡・黄檗・宇治　{/オレンジ}{緑}です。{/緑}</textarea>
   <br>
   色を追加：
   <button onclick="wrapColor('緑')">緑</button>
@@ -220,8 +217,8 @@ canvas{
   <button onclick="wrapColor('赤')">赤</button>
   <br><br>
   速度：
-  <input type="range" id="speedRange" min="0.5" max="5" step="0.5" value="2.5">
-  <span id="speedVal">2.5</span> px/frame
+  <input type="range" id="speedRange" min="0.5" max="5" step="0.5" value="3.0">
+  <span id="speedVal">3.0</span> px/frame
   <br><br>
   <label>
     <input type="checkbox" id="loopCheck" checked>
@@ -285,12 +282,14 @@ function updateCar(){
   }
 }
 
-/* ★★★ 修正ここ ★★★ */
+/* ★★★ renderClock 修正版：秒変化で100ms点灯 ★★★ */
+let lastSecond = -1;
+
 function renderClock(){
   const now=new Date();
-
-  const hour=now.getHours();              // ← ゼロ埋めしない
+  const hour=now.getHours();
   const minute=String(now.getMinutes()).padStart(2,"0");
+  const second=now.getSeconds();
 
   const hStr=String(hour);
   const container=document.getElementById("clockSeg");
@@ -309,8 +308,19 @@ function renderClock(){
   const colon=document.createElement("div");
   colon.className="colon";
   colon.innerHTML='<div class="dot top"></div><div class="dot bottom"></div>';
-  container.appendChild(colon);
 
+  const dots = colon.querySelectorAll(".dot");
+  if(second !== lastSecond){
+    dots.forEach(dot => dot.style.visibility = "visible");
+    setTimeout(()=>{
+      dots.forEach(dot => dot.style.visibility = "hidden");
+    }, 500); // ← 点灯時間を100msに変更
+    lastSecond = second;
+  } else {
+    dots.forEach(dot => dot.style.visibility = "hidden");
+  }
+
+  container.appendChild(colon);
   container.appendChild(createDigit(minute[0]));
   container.appendChild(createDigit(minute[1]));
 }
@@ -321,7 +331,7 @@ const ctx=canvas.getContext("2d");
 
 let message=document.getElementById("msgInput").value;
 let x=canvas.width;
-let speed=1.5;
+let speed=3.0;
 let loop=true;
 
 function parseMessage(text){
@@ -413,9 +423,7 @@ function wrapColor(colorName){
 
   input.value=
     input.value.substring(0,start)+
-    "{"+colorName+"}"+
-    selected+
-    "{/"+colorName+"}"+
+    "{"+colorName+"}"+selected+"{/"+colorName+"}"+
     input.value.substring(end);
 }
 
@@ -426,24 +434,4 @@ animate();
 </script>
 
 </body>
-
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
