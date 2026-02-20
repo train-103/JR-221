@@ -287,11 +287,14 @@ function updateCar(){
 }
 
 /* ★★★ 時計表示 ★★★ */
+/* ★★★ renderClock 修正版：秒変化で100ms点灯 ★★★ */
+let lastSecond = -1;
+
 function renderClock(){
   const now=new Date();
-
   const hour=now.getHours();
   const minute=String(now.getMinutes()).padStart(2,"0");
+  const second=now.getSeconds();
 
   const hStr=String(hour);
   const container=document.getElementById("clockSeg");
@@ -310,19 +313,30 @@ function renderClock(){
   const colon=document.createElement("div");
   colon.className="colon";
   colon.innerHTML='<div class="dot top"></div><div class="dot bottom"></div>';
-  container.appendChild(colon);
 
+  const dots = colon.querySelectorAll(".dot");
+  if(second !== lastSecond){
+    dots.forEach(dot => dot.style.visibility = "visible");
+    setTimeout(()=>{
+      dots.forEach(dot => dot.style.visibility = "hidden");
+    }, 500); // ← 点灯時間を100msに変更
+    lastSecond = second;
+  } else {
+    dots.forEach(dot => dot.style.visibility = "hidden");
+  }
+
+  container.appendChild(colon);
   container.appendChild(createDigit(minute[0]));
   container.appendChild(createDigit(minute[1]));
 }
+/* ★★★ ここまで ★★★ */
 
-/* ★★★ 丸ドットLED表示 ★★★ */
 const canvas=document.getElementById("ledCanvas");
 const ctx=canvas.getContext("2d");
 
 let message=document.getElementById("msgInput").value;
 let x=canvas.width;
-let speed=2.5;
+let speed=3.0;
 let loop=true;
 
 const dotRadius = 1.2;
@@ -435,3 +449,4 @@ animate();
 
 </body>
 </html>
+
