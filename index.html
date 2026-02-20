@@ -195,7 +195,7 @@ canvas{
 </div>
 
 <div class="ledarea">
-  <canvas id="ledCanvas" width="680" height="120"></canvas>
+  <canvas id="ledCanvas" width="720" height="140"></canvas>
 </div>
 
 </div>
@@ -356,8 +356,8 @@ function drawLEDText(text,posX){
   ctx.fillStyle="#000";
   ctx.fillRect(0,0,canvas.width,canvas.height);
 
-  ctx.font="54px 'MS Gothic'";
-  ctx.shadowBlur=18;
+  ctx.font="62px 'MS Gothic'";
+  ctx.shadowBlur=26;
 
   let cursorX=posX;
   const parts=parseMessage(text);
@@ -365,7 +365,7 @@ function drawLEDText(text,posX){
   parts.forEach(p=>{
     ctx.fillStyle=p.color;
     ctx.shadowColor=p.color;
-    ctx.fillText(p.text,cursorX,85);
+    ctx.fillText(p.text,cursorX,100);
     cursorX+=ctx.measureText(p.text).width;
   });
 }
@@ -423,4 +423,5 @@ animate();
 </body>
 
 </html>
+
 
