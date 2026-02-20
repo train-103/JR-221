@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>221系 未更新車 車内案内表示器</title>
+
+<style>
+body{
+  background:#cfcac2;
+  font-family:sans-serif;
+}
+
+/* ★ 横幅縮小 */
+.panel{
+  width:780px;
+  margin:40px auto;
+  background:#e6e2da;
+  padding:25px;
+  border-radius:6px;
+}
+
+.display{
+  background:linear-gradient(#111,#000);
+  border-radius:20px;
+  padding:25px 30px 20px 30px;
+  box-shadow:
+    inset 0 0 30px rgba(255,255,255,0.05),
+    inset 0 15px 40px rgba(255,255,255,0.03);
+}
+
+.top{
+  display:flex;
+  gap:35px;
+  align-items:flex-start;
+  margin-bottom:12px;
+}
+
+.whitebox{
+  border:2px solid rgba(255,255,255,0.6);
+  border-radius:12px;
+  padding:14px 22px;
+  color:white;
+  display:flex;
+  align-items:center;
+  height:85px;
+  box-sizing:border-box;
+}
+
+/* ===== 号車 ===== */
+.carbox{
+  gap:12px;
+  padding:14px 18px;
+  align-items:flex-end;
+}
+
+.gousha{
+  font-size:24px;
+  line-height:1;
+}
+
+.carbox .digit{
+  position:relative;
+  width:32px;
+  height:56px;
+}
+
+.carbox .a{top:0;left:6px;width:20px;height:4px;}
+.carbox .b{top:4px;right:0;width:4px;height:23px;}
+.carbox .c{bottom:4px;right:0;width:4px;height:23px;}
+.carbox .d{bottom:0;left:6px;width:20px;height:4px;}
+.carbox .e{bottom:4px;left:0;width:4px;height:23px;}
+.carbox .f{top:4px;left:0;width:4px;height:23px;}
+.carbox .g{top:26px;left:6px;width:20px;height:4px;}
+
+/* ===== 時計 ===== */
+.clockbox{
+  flex-direction:column;
+  justify-content:center;
+  padding:14px 24px;
+}
+
+.clock-label{
+  font-size:22px;
+  margin-bottom:6px;
+}
+
+.clockbox .digit{
+  position:relative;
+  width:20px;
+  height:36px;
+}
+
+.clockbox .a{top:0;left:4px;width:12px;height:3px;}
+.clockbox .b{top:3px;right:0;width:3px;height:14px;}
+.clockbox .c{bottom:3px;right:0;width:3px;height:14px;}
+.clockbox .d{bottom:0;left:4px;width:12px;height:3px;}
+.clockbox .e{bottom:3px;left:0;width:3px;height:14px;}
+.clockbox .f{top:3px;left:0;width:3px;height:14px;}
+.clockbox .g{top:17px;left:4px;width:12px;height:3px;}
+
+.clockbox .colon{
+  width:4px;
+  height:36px;
+  position:relative;
+}
+
+.clockbox .dot{
+  width:4px;
+  height:4px;
+  background:#ff7a00;
+  border-radius:50%;
+  position:absolute;
+  left:0;
+}
+
+.clockbox .dot.top{top:9px;}
+.clockbox .dot.bottom{bottom:9px;}
+
+.seg{
+  position:absolute;
+  background:#2a2a2a;
+  opacity:0.25;
+}
+
+.on{
+  background:#ff7a00;
+  opacity:1;
+  box-shadow:0 0 8px rgba(255,120,0,0.8);
+}
+
+.seven-seg{
+  display:flex;
+  gap:6px;
+  align-items:center;
+}
+
+/* ===== LED ===== */
+.ledarea{
+  background:#111;
+  padding:10px;
+  border-radius:6px;
+  margin-top:8px;
+}
+
+canvas{
+  display:block;
+  margin:auto;
+}
+
+/* ===== コントロール ===== */
+.controls{
+  margin-top:80px;
+  text-align:center;
+}
+
+.controls textarea{
+  width:85%;
+  height:90px;
+  padding:8px;
+  font-size:16px;
+  resize:vertical;
+}
+
+.controls button{
+  padding:6px 12px;
+  font-size:14px;
+  margin:2px;
+}
+
+.controls input[type="number"]{
+  width:60px;
+}
+
+.controls input[type="range"]{
+  width:200px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="panel">
+<div class="display">
+
+<div class="top">
+  <div class="whitebox carbox">
+    <div class="seven-seg" id="carSeg"></div>
+    <div class="gousha">号車</div>
+  </div>
+
+  <div class="whitebox clockbox">
+    <div class="clock-label">ただいまの時刻</div>
+    <div class="seven-seg" id="clockSeg"></div>
+  </div>
+</div>
+
+<div class="ledarea">
+  <canvas id="ledCanvas" width="680" height="100"></canvas>
+</div>
+
+</div>
+
+<div class="controls">
+  号車：
+  <input type="number" id="carInput" min="1" max="99" value="6">
+  <button onclick="updateCar()">更新</button>
+  <br><br>
+  表示内容：
+  <br>
+  <textarea id="msgInput">{緑}まもなく　{/緑}{オレンジ}宇治　{/オレンジ}{緑}です。{/緑}</textarea>
+  <br>
+  色を追加：
+  <button onclick="wrapColor('緑')">緑</button>
+  <button onclick="wrapColor('オレンジ')">オレンジ</button>
+  <button onclick="wrapColor('赤')">赤</button>
+  <br><br>
+  速度：
+  <input type="range" id="speedRange" min="0.5" max="5" step="0.5" value="1.5">
+  <span id="speedVal">1.5</span> px/frame
+  <br><br>
+  <label>
+    <input type="checkbox" id="loopCheck" checked>
+    ループする
+  </label>
+  <br><br>
+  <button onclick="updateMessage()">表示更新</button>
+</div>
+
+</div>
+
+<script>
+const colorMap={
+  "緑":"#00ff00",
+  "オレンジ":"#ff7a00",
+  "赤":"#ff3030"
+};
+
+const segMap={
+  "0":["a","b","c","d","e","f"],
+  "1":["b","c"],
+  "2":["a","b","g","e","d"],
+  "3":["a","b","g","c","d"],
+  "4":["f","g","b","c"],
+  "5":["a","f","g","c","d"],
+  "6":["a","f","g","e","c","d"],
+  "7":["a","b","c"],
+  "8":["a","b","c","d","e","f","g"],
+  "9":["a","b","c","d","f","g"]
+};
+
+function createDigit(num){
+  const d=document.createElement("div");
+  d.className="digit";
+  ["a","b","c","d","e","f","g"].forEach(s=>{
+    const seg=document.createElement("div");
+    seg.className="seg "+s;
+    if(segMap[num]?.includes(s)) seg.classList.add("on");
+    d.appendChild(seg);
+  });
+  return d;
+}
+
+function renderCar(num){
+  const container=document.getElementById("carSeg");
+  container.innerHTML="";
+  const str=String(num).padStart(2,"0");
+  str.split("").forEach((n,i)=>{
+    const digit=createDigit(n);
+    if(num<10 && i===0){
+      digit.querySelectorAll(".seg").forEach(s=>s.classList.remove("on"));
+    }
+    container.appendChild(digit);
+  });
+}
+
+function updateCar(){
+  const value=parseInt(document.getElementById("carInput").value);
+  if(value>=1 && value<=99){
+    renderCar(value);
+  }
+}
+
+/* ★★★ 修正ここ ★★★ */
+function renderClock(){
+  const now=new Date();
+
+  const hour=now.getHours();              // ← ゼロ埋めしない
+  const minute=String(now.getMinutes()).padStart(2,"0");
+
+  const hStr=String(hour);
+  const container=document.getElementById("clockSeg");
+  container.innerHTML="";
+
+  if(hour>=10){
+    container.appendChild(createDigit(hStr[0]));
+    container.appendChild(createDigit(hStr[1]));
+  }else{
+    const blank=createDigit("0");
+    blank.querySelectorAll(".seg").forEach(s=>s.classList.remove("on"));
+    container.appendChild(blank);
+    container.appendChild(createDigit(hStr[0]));
+  }
+
+  const colon=document.createElement("div");
+  colon.className="colon";
+  colon.innerHTML='<div class="dot top"></div><div class="dot bottom"></div>';
+  container.appendChild(colon);
+
+  container.appendChild(createDigit(minute[0]));
+  container.appendChild(createDigit(minute[1]));
+}
+/* ★★★ ここまで ★★★ */
+
+const canvas=document.getElementById("ledCanvas");
+const ctx=canvas.getContext("2d");
+
+let message=document.getElementById("msgInput").value;
+let x=canvas.width;
+let speed=1.5;
+let loop=true;
+
+function parseMessage(text){
+  const segments=[];
+  const regex=/{(.*?)}/g;
+  let currentColor="#ff7a00";
+  let lastIndex=0;
+  let match;
+
+  while((match=regex.exec(text))!==null){
+    if(match.index>lastIndex){
+      segments.push({
+        text:text.substring(lastIndex,match.index),
+        color:currentColor
+      });
+    }
+    const tag=match[1];
+    if(tag.startsWith("/")){
+      currentColor="#ff7a00";
+    }else if(colorMap[tag]){
+      currentColor=colorMap[tag];
+    }
+    lastIndex=regex.lastIndex;
+  }
+
+  if(lastIndex<text.length){
+    segments.push({
+      text:text.substring(lastIndex),
+      color:currentColor
+    });
+  }
+
+  return segments;
+}
+
+function drawLEDText(text,posX){
+  ctx.fillStyle="#000";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  ctx.font="54px 'MS Gothic'";
+  ctx.shadowBlur=18;
+
+  let cursorX=posX;
+  const parts=parseMessage(text);
+
+  parts.forEach(p=>{
+    ctx.fillStyle=p.color;
+    ctx.shadowColor=p.color;
+    ctx.fillText(p.text,cursorX,72);
+    cursorX+=ctx.measureText(p.text).width;
+  });
+}
+
+function animate(){
+  drawLEDText(message,x);
+  x-=speed;
+
+  const textWidth=ctx.measureText(
+    message.replace(/{.*?}/g,"")
+  ).width;
+
+  if(x<-textWidth){
+    if(loop){
+      x=canvas.width;
+    }else{
+      return;
+    }
+  }
+
+  requestAnimationFrame(animate);
+}
+
+document.getElementById("speedRange").addEventListener("input",function(){
+  speed=parseFloat(this.value);
+  document.getElementById("speedVal").textContent=speed;
+});
+
+function updateMessage(){
+  message=document.getElementById("msgInput").value;
+  loop=document.getElementById("loopCheck").checked;
+  x=canvas.width;
+}
+
+function wrapColor(colorName){
+  const input=document.getElementById("msgInput");
+  const start=input.selectionStart;
+  const end=input.selectionEnd;
+  const selected=input.value.substring(start,end);
+
+  input.value=
+    input.value.substring(0,start)+
+    "{"+colorName+"}"+
+    selected+
+    "{/"+colorName+"}"+
+    input.value.substring(end);
+}
+
+setInterval(renderClock,1000);
+renderCar(6);
+renderClock();
+animate();
+</script>
+
+</body>
+</html>
