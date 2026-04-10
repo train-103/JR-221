@@ -218,9 +218,38 @@ canvas{
   <button onclick="wrapColor('緑')">緑</button>
   <button onclick="wrapColor('オレンジ')">オレンジ</button>
   <button onclick="wrapColor('赤')">赤</button>
-  <br><br>
-  速度：
-  <input type="range" id="speedRange" min="0.1" max="10" step="0.1" value="5.5">
+<br><br>
+
+表示モード：
+<select id="displayMode">
+<option value="scroll">スクロール</option>
+<option value="fixed">常時表示</option>
+<option value="alternate">2文交互表示</option>
+</select>
+<br><br>
+
+常時表示文
+<textarea id="msgFixed" rows="2" style="width:85%">
+{オレンジ}宇 治{/オレンジ}
+</textarea>
+<br><br>
+
+交互表示文①
+<textarea id="msgAlt1" rows="2" style="width:85%">
+{オレンジ}宇 治{/オレンジ}
+</textarea>
+
+交互表示文②
+<textarea id="msgAlt2" rows="2" style="width:85%">
+{オレンジ}Ｕｊｉ{/オレンジ}
+</textarea>
+
+切替時間(ms)
+<input type="number" id="altInterval" value="5000">
+<br><br>
+
+速度：
+<input type="range" id="speedRange" min="0.1" max="10" step="0.1" value="5.5">
   <span id="speedVal">5.5</span> px/frame
   <br><br>
   <label>
@@ -337,6 +366,16 @@ let x=canvas.width;
 let speed=5.5;
 let loop=true;
 
+let displayMode="scroll";
+
+let fixedText="";   // ★追加
+
+let altText1="";
+let altText2="";
+let altInterval=3000;
+let altTimer=0;
+let altState=0;
+
 function parseMessage(text){
   const segments=[];
   const regex=/{(.*?)}/g;
@@ -389,19 +428,53 @@ function drawLEDText(text,posX){
 }
 
 function animate(){
-  drawLEDText(message,x);
-  x-=speed;
+
+  ctx.fillStyle="#000";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+
+  if(displayMode==="scroll"){
+
+    drawLEDText(message,x);
+    x-=speed;
+
+    const textWidth=ctx.measureText(
+      message.replace(/{.*?}/g,"")
+    ).width;
+
+    if(x<-textWidth){
+      if(loop){
+        x=canvas.width;
+      }
+    }
+
+  }
+
+  else if(displayMode==="fixed"){
 
   const textWidth=ctx.measureText(
-    message.replace(/{.*?}/g,"")
+    fixedText.replace(/{.*?}/g,"")
   ).width;
 
-  if(x<-textWidth){
-    if(loop){
-      x=canvas.width;
-    }else{
-      return;
+  drawLEDText(fixedText,(canvas.width-textWidth)/2);
+}
+
+  else if(displayMode==="alternate"){
+
+    const now=Date.now();
+
+    if(now-altTimer>altInterval){
+      altState=!altState;
+      altTimer=now;
     }
+
+    const text=altState?altText2:altText1;
+
+    const textWidth=ctx.measureText(
+      text.replace(/{.*?}/g,"")
+    ).width;
+
+    drawLEDText(text,(canvas.width-textWidth)/2);
+
   }
 
   requestAnimationFrame(animate);
@@ -413,8 +486,19 @@ document.getElementById("speedRange").addEventListener("input",function(){
 });
 
 function updateMessage(){
+
+  displayMode=document.getElementById("displayMode").value;
+
   message=document.getElementById("msgInput").value;
-  loop=document.getElementById("loopCheck").checked;
+
+  fixedText=document.getElementById("msgFixed").value;  // ★追加
+
+  loop=document.getElementById("loopCheck").checked;  
+
+  altText1=document.getElementById("msgAlt1").value;
+  altText2=document.getElementById("msgAlt2").value;
+  altInterval=parseInt(document.getElementById("altInterval").value);
+
   x=canvas.width;
 }
 
@@ -438,7 +522,6 @@ animate();
 
 </body>
 </html>
-
 
 
 
